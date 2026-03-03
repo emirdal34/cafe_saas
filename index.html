@@ -208,16 +208,18 @@
                         <div className="font-bold text-lg tracking-tight">Emir Büfe</div>
                         <button 
                             onClick={async () => {
-                                showToast('Garson masanıza yönlendiriliyor');
-                                if (siparisNo.trim() === "") { showToast("Lütfen önce masa numaranızı girin!"); return; }
-                                try {
-                                    await fetch("https://cafe-saas.onrender.com/api/garson-cagir", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ masa_no: siparisNo })
-                                    });
-                                } catch (error) {
-                                    console.error("Hata:", error);
+                                const masa = prompt("Garson çağırmak için lütfen masa numaranızı girin:");
+                                if (masa) {
+                                    showToast('Garson masanıza yönlendiriliyor');
+                                    try {
+                                        await fetch("https://cafe-saas.onrender.com/api/garson-cagir", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ masa_no: masa })
+                                        });
+                                    } catch (error) {
+                                        console.error("Hata:", error);
+                                    }
                                 }
                             }} 
                             className="bg-[#f1f5f9] text-[#0f172a] px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition flex items-center gap-2"
