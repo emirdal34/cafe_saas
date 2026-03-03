@@ -8,6 +8,7 @@
         body { background-color: #0f172a; color: white; font-family: sans-serif; overflow-x: hidden; } 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body class="p-6">
@@ -28,6 +29,7 @@
     <script>
         const API_URL = "https://cafe-saas.onrender.com";
         let eskiSiparisSayisi = 0;
+        let eskiGarsonSayisi = 0; // Garson çağrılarını takip etmek için ekledik
 
         async function siparisleriGetir() {
             try {
@@ -38,20 +40,40 @@
                 const kutu = document.getElementById("siparisler");
                 const bildirim = document.getElementById("bildirimSesi");
                 
-                // Bağlantı başarılıysa yeşil yak
                 document.getElementById("durum").innerText = "🟢 Sistem Aktif";
                 document.getElementById("durum").className = "text-green-400 font-bold px-4 py-2 bg-gray-800 rounded-xl border border-green-900/30";
                 
-                // YENİ SİPARİŞ VAR MI KONTROLÜ VE SES ÇALMA
-                if (data.siparisler.length > eskiSiparisSayisi) {
-                    bildirim.play().catch(e => console.log("Ses için ekrana bir kez tıkla!"));
+                // === ZİL ÇALMA MANTIĞI: Sipariş VEYA Garson çağrısı artarsa çal ===
+                if (data.siparisler.length > eskiSiparisSayisi || data.garson_cagrilari.length > eskiGarsonSayisi) {
+                    bildirim.play().catch(e => console.log("Sesi başlatmak için ekrana bir kez tıkla!"));
                 }
                 eskiSiparisSayisi = data.siparisler.length;
+                eskiGarsonSayisi = data.garson_cagrilari.length;
 
                 kutu.innerHTML = ""; 
                 
-                if (data.siparisler.length === 0) {
-                    kutu.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500 font-bold text-xl italic">Henüz bekleyen bir sipariş yok...</div>`;
+                // 1. Önce Garson Çağrılarını Göster (En üste düşsün)
+                data.garson_cagrilari.forEach(cagri => {
+                    kutu.innerHTML += `
+                        <div class="bg-red-900/30 p-6 rounded-3xl border-l-8 border-red-500 shadow-2xl animate-pulse-slow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h2 class="text-2xl font-black text-white">MASA: ${cagri.masa_no}</h2>
+                                    <span class="text-xs font-bold text-red-400 uppercase tracking-widest italic">🛎️ GARSON ÇAĞIRIYOR</span>
+                                </div>
+                                <span class="bg-red-900 px-3 py-1 rounded-lg text-sm font-bold text-white border border-red-700">${cagri.zaman}</span>
+                            </div>
+                            <div class="py-6 text-center text-white font-bold text-lg">Müşteri garson bekliyor.</div>
+                            <button onclick="garsonTamamla('${cagri.masa_no}')" class="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition active:scale-95 text-lg shadow-lg">
+                                ✅ GİTTİM / SİL
+                            </button>
+                        </div>
+                    `;
+                });
+
+                // 2. Normal Siparişleri Göster
+                if (data.siparisler.length === 0 && data.garson_cagrilari.length === 0) {
+                    kutu.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500 font-bold text-xl italic">Henüz bekleyen bir iş yok...</div>`;
                     return;
                 }
 
@@ -72,14 +94,11 @@
                                 </div>
                                 <span class="bg-gray-900 px-3 py-1 rounded-lg text-sm font-bold text-orange-400 border border-gray-700">${siparis.zaman}</span>
                             </div>
-                            
                             <ul class="mb-8">${urunlerHTML}</ul>
-                            
                             <div class="flex justify-between items-center mb-6 pt-2 border-t border-gray-700">
                                 <span class="text-gray-400 font-bold">TOPLAM</span>
                                 <span class="text-2xl font-black text-white">₺${siparis.toplam_tutar}</span>
                             </div>
-
                             <button onclick="siparisTamamla(${siparis.id})" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition active:scale-95 text-lg shadow-lg shadow-green-900/20">
                                 ✅ HAZIR / SİL
                             </button>
@@ -95,13 +114,21 @@
         async function siparisTamamla(id) {
             try {
                 const response = await fetch(`${API_URL}/api/mutfak/siparis-tamamla/${id}`, {method: "POST"});
-                if (response.ok) {
-                    siparisleriGetir(); 
-                }
+                if (response.ok) siparisleriGetir(); 
             } catch (e) { alert("Hata: Sipariş kapatılamadı!"); }
         }
 
-        // 2 saniyede bir kontrol et
+        async function garsonTamamla(masa) {
+            try {
+                const response = await fetch(`${API_URL}/api/mutfak/garson-tamamla`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ masa_no: masa })
+                });
+                if (response.ok) siparisleriGetir(); 
+            } catch (e) { alert("Hata: Çağrı silinemedi!"); }
+        }
+
         setInterval(siparisleriGetir, 2000);
         siparisleriGetir();
     </script>
