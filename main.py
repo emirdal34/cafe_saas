@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Union, Optional
 import datetime
@@ -153,7 +154,6 @@ def urun_ekle(data: UrunEkleModel):
         if kat["id"] == data.kategori_id:
             mevcut_idler = [u["id"] for u in kat["urunler"]]
             yeni_id = max(mevcut_idler) + 1 if mevcut_idler else 1
-            # Eklerken resim ataması da yaptık ki hata vermesin
             yeni_urun = { "id": yeni_id, "ad": data.ad, "fiyat": data.fiyat, "aciklama": "Yeni Eklendi", "resim": "fotolar/logo.png", "secenekler": None }
             kat["urunler"].append(yeni_urun)
             return {"mesaj": "Eklendi"}
@@ -168,9 +168,27 @@ def siparis_ver(data: SiparisOlustur):
     siparis_id_sayaci += 1
     return {"mesaj": "İletildi", "siparis_id": yeni_siparis["id"]}
 
+# --- BU YENİ: GARSON ÇAĞRISINI LİSTEYE EKLER ---
+@app.post("/api/garson-cagir")
+async def garson_cagir(veri: dict):
+    # Mutfağın görmesi için listeye ekliyoruz
+    garson_cagrilari.append({
+        "masa_no": veri.get("masa_no"),
+        "zaman": datetime.datetime.now().strftime("%H:%M")
+    })
+    return {"status": "success"}
+
 @app.get("/api/mutfak/bekleyen-isler")
 def mutfak_ekrani():
     return {"siparisler": [s for s in aktif_siparisler if s["durum"] == "Hazırlanıyor"], "garson_cagrilari": garson_cagrilari}
+
+# --- BU YENİ: GARSON ÇAĞRISINI EKRANDAN SİLER ---
+@app.post("/api/mutfak/garson-tamamla")
+async def garson_tamamla(veri: dict):
+    global garson_cagrilari
+    masa = veri.get("masa_no")
+    garson_cagrilari = [g for g in garson_cagrilari if g["masa_no"] != masa]
+    return {"mesaj": "Tamamlandı"}
 
 @app.post("/api/mutfak/siparis-tamamla/{siparis_id}")
 def siparis_tamamla(siparis_id: int):
@@ -189,3 +207,6 @@ def patron_raporu():
         "bekleyen_siparis_sayisi": len(bekleyenler),
         "gecmis": aktif_siparisler[::-1] 
     }
+
+# En sona ekledik ki HTML'lerin de internete açılsın
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
