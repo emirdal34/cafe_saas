@@ -94,7 +94,7 @@
             const [menulerYuklendi, setMenulerYuklendi] = useState(false);
 
             useEffect(() => {
-                fetch("http://127.0.0.1:8000/api/menu")
+                fetch("https://cafe-saas.onrender.com/api/menu")
                     .then(res => res.json())
                     .then(data => {
                         setMenuVerisi(data);
@@ -167,7 +167,7 @@
                         quantity: item.quantity
                     }));
 
-                    const response = await fetch("http://127.0.0.1:8000/api/siparis-ver", {
+                    const response = await fetch("https://cafe-saas.onrender.com/api/siparis-ver", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
