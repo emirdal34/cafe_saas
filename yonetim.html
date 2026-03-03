@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Emir Büfe - Patron Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8 font-sans">
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
+        <div class="bg-blue-900 p-6 text-white flex justify-between items-center">
+            <h1 class="text-2xl font-extrabold">⚙️ Menü & Fiyat Yönetimi</h1>
+            <span id="durum" class="bg-blue-800 px-3 py-1 rounded-lg text-sm font-bold animate-pulse">Yükleniyor...</span>
+        </div>
+        
+        <div class="p-6 bg-blue-50 border-b border-blue-100">
+            <h2 class="text-xl font-black text-blue-900 mb-4">➕ Yeni Ürün Ekle</h2>
+            <div class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Kategori Seç</label>
+                    <select id="yeni-kategori" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 font-bold outline-none focus:border-blue-500">
+                        <option value="kategori_kahvalti">Kahvaltılıklar</option>
+                        <option value="kategori1">Tost, Sandviç ve Izgara</option>
+                        <option value="kategori2">Gözleme Çeşitleri</option>
+                        <option value="kategori3">Atıştırmalıklar</option>
+                        <option value="kategori4">Sıcak İçecekler</option>
+                        <option value="kategori5">İçecekler</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Ürün Adı</label>
+                    <input type="text" id="yeni-ad" placeholder="Örn: Ev Yapımı Limonata" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 font-bold outline-none focus:border-blue-500">
+                </div>
+                <div class="w-32">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Fiyat (₺)</label>
+                    <input type="number" id="yeni-fiyat" placeholder="25" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 font-black outline-none focus:border-blue-500 text-center">
+                </div>
+                <button onclick="yeniUrunEkle()" class="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-2 rounded-lg transition active:scale-95 h-10 shadow-md">
+                    EKLE
+                </button>
+            </div>
+        </div>
+        
+        <div id="menu-alani" class="p-6 space-y-8">
+            </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        async function menuyuGetir() {
+            try {
+                const response = await fetch(`${API_URL}/api/menu`);
+                if (!response.ok) throw new Error("Sunucu yanıt vermedi");
+                
+                const menuler = await response.json();
+                const menuAlani = document.getElementById("menu-alani");
+                menuAlani.innerHTML = "";
+
+                document.getElementById("durum").innerText = "🟢 Sistem Aktif";
+                document.getElementById("durum").className = "bg-green-500 px-3 py-1 rounded-lg text-sm font-bold";
+
+                menuler.forEach(kat => {
+                    let kategoriHTML = `<div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-sm"><h2 class="text-xl font-black text-blue-900 mb-4 border-b pb-2">${kat.kategoriAdi}</h2><div class="space-y-3">`;
+                    
+                    kat.urunler.forEach(urun => {
+                        if (urun.secenekler) {
+                            urun.secenekler.forEach(sec => {
+                                kategoriHTML += inputOlustur(kat.id, urun.id, sec.id, `${urun.ad} (${sec.ad})`, sec.fiyat);
+                            });
+                        } else {
+                            kategoriHTML += inputOlustur(kat.id, urun.id, null, urun.ad, urun.fiyat);
+                        }
+                    });
+                    
+                    kategoriHTML += `</div></div>`;
+                    menuAlani.innerHTML += kategoriHTML;
+                });
+            } catch (error) {
+                document.getElementById("durum").innerText = "🔴 Python Kapalı!";
+                document.getElementById("durum").className = "bg-red-500 px-3 py-1 rounded-lg text-sm font-bold animate-pulse";
+            }
+        }
+
+        // ARTIK İSTİSNASIZ HER ÜRÜNDE SİL BUTONU VAR
+        function inputOlustur(katId, urunId, secenekId, urunAdi, fiyat) {
+            const secParam = secenekId ? `'${secenekId}'` : 'null';
+            const inputId = `fiyat_${katId}_${urunId}_${secenekId || 'tek'}`;
+            
+            return `
+                <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-blue-300 transition">
+                    <span class="font-bold text-gray-700 w-1/2">${urunAdi}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-400 font-bold">₺</span>
+                        <input type="number" id="${inputId}" value="${fiyat}" class="w-24 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 font-black text-center outline-none focus:border-blue-500 transition">
+                        
+                        <button onclick="fiyatGuncelle('${katId}', ${urunId}, ${secParam}, '${inputId}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition active:scale-95">
+                            GÜNCELLE
+                        </button>
+                        
+                        <button onclick="urunSil('${katId}', ${urunId})" title="Bu ürünü tamamen sil" class="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-2 rounded-lg transition active:scale-95">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // FİYAT GÜNCELLEME (HATA YAKALAMA EKLENDİ)
+        async function fiyatGuncelle(katId, urunId, secenekId, inputId) {
+            const yeniFiyatText = document.getElementById(inputId).value;
+            if(yeniFiyatText.trim() === "") return alert("Fiyat boş olamaz!");
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/fiyat-guncelle`, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    // Sayıya çevirmeyi garantiye alıyoruz
+                    body: JSON.stringify({ 
+                        kategori_id: katId, 
+                        urun_id: parseInt(urunId), 
+                        secenek_id: secenekId, 
+                        yeni_fiyat: parseFloat(yeniFiyatText) 
+                    })
+                });
+
+                if (response.ok) {
+                    alert("✅ Fiyat jilet gibi güncellendi!");
+                } else {
+                    const hata = await response.text();
+                    alert("HATA ÇIKTI: " + hata);
+                }
+            } catch(e) { alert("Sunucuya bağlanılamadı. Python motorunu kontrol et!"); }
+        }
+
+        // YENİ ÜRÜN EKLEME (HATA YAKALAMA EKLENDİ)
+        async function yeniUrunEkle() {
+            const katId = document.getElementById("yeni-kategori").value;
+            const ad = document.getElementById("yeni-ad").value;
+            const fiyatText = document.getElementById("yeni-fiyat").value;
+
+            if (ad.trim() === "" || fiyatText.trim() === "") {
+                return alert("⚠️ Ürün adı ve fiyatı boş bırakılamaz!");
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/urun-ekle`, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        kategori_id: katId, 
+                        ad: ad, 
+                        fiyat: parseFloat(fiyatText) 
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById("yeni-ad").value = "";
+                    document.getElementById("yeni-fiyat").value = "";
+                    alert("✅ Ürün başarıyla eklendi patron!");
+                    menuyuGetir(); // Ekranı tazele
+                } else {
+                    const hata = await response.text();
+                    alert("HATA ÇIKTI: " + hata);
+                }
+            } catch(e) { alert("Sunucuya bağlanılamadı. Python motorunu kontrol et!"); }
+        }
+
+        // ÜRÜN SİLME
+        async function urunSil(katId, urunId) {
+            if(!confirm("⚠️ Patron bu ürünü menüden tamamen siliyorum, emin misin?")) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/urun-sil/${katId}/${urunId}`, {
+                    method: 'DELETE'
+                });
+                if(response.ok) {
+                    alert("🗑️ Ürün silindi!");
+                    menuyuGetir(); 
+                } else {
+                    alert("Silinemedi: " + await response.text());
+                }
+            } catch(e) { alert("Sunucuya bağlanılamadı. Python motorunu kontrol et!"); }
+        }
+
+        menuyuGetir();
+    </script>
+</body>
+</html>

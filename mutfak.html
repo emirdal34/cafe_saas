@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Emir Büfe - Mutfak Sipariş Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> 
+        body { background-color: #0f172a; color: white; font-family: sans-serif; overflow-x: hidden; } 
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-6">
+    <audio id="bildirimSesi" src="siparis.mp3" preload="auto"></audio>
+
+    <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-orange-400 tracking-tight">👨‍🍳 Mutfak Sipariş Ekranı</h1>
+            <p class="text-gray-400 text-sm mt-1">Anlık gelen siparişler burada listelenir.</p>
+        </div>
+        <div id="durum" class="text-yellow-400 font-bold animate-pulse px-4 py-2 bg-gray-800 rounded-xl border border-gray-700">
+            Sistem Bağlanıyor...
+        </div>
+    </div>
+    
+    <div id="siparisler" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let eskiSiparisSayisi = 0;
+
+        async function siparisleriGetir() {
+            try {
+                const response = await fetch(`${API_URL}/api/mutfak/bekleyen-isler`);
+                if (!response.ok) throw new Error("Sunucu hatası");
+                
+                const data = await response.json();
+                const kutu = document.getElementById("siparisler");
+                const bildirim = document.getElementById("bildirimSesi");
+                
+                // Bağlantı başarılıysa yeşil yak
+                document.getElementById("durum").innerText = "🟢 Sistem Aktif";
+                document.getElementById("durum").className = "text-green-400 font-bold px-4 py-2 bg-gray-800 rounded-xl border border-green-900/30";
+                
+                // YENİ SİPARİŞ VAR MI KONTROLÜ VE SES ÇALMA
+                if (data.siparisler.length > eskiSiparisSayisi) {
+                    bildirim.play().catch(e => console.log("Ses için ekrana bir kez tıkla!"));
+                }
+                eskiSiparisSayisi = data.siparisler.length;
+
+                kutu.innerHTML = ""; 
+                
+                if (data.siparisler.length === 0) {
+                    kutu.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500 font-bold text-xl italic">Henüz bekleyen bir sipariş yok...</div>`;
+                    return;
+                }
+
+                data.siparisler.forEach(siparis => {
+                    let urunlerHTML = siparis.urunler.map(u => `
+                        <li class="flex justify-between items-center border-b border-gray-700/50 py-3">
+                            <span class="text-lg font-medium"><b class="text-orange-500 text-xl mr-2">${u.adet}x</b> ${u.ad}</span>
+                            <span class="text-gray-500 text-sm">₺${u.fiyat * u.adet}</span>
+                        </li>
+                    `).join('');
+                    
+                    kutu.innerHTML += `
+                        <div class="bg-gray-800 p-6 rounded-3xl border-l-8 border-orange-500 shadow-2xl animate-fade-in">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h2 class="text-2xl font-black text-white">Masa: ${siparis.masa_no}</h2>
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fiş No: #${siparis.id}</span>
+                                </div>
+                                <span class="bg-gray-900 px-3 py-1 rounded-lg text-sm font-bold text-orange-400 border border-gray-700">${siparis.zaman}</span>
+                            </div>
+                            
+                            <ul class="mb-8">${urunlerHTML}</ul>
+                            
+                            <div class="flex justify-between items-center mb-6 pt-2 border-t border-gray-700">
+                                <span class="text-gray-400 font-bold">TOPLAM</span>
+                                <span class="text-2xl font-black text-white">₺${siparis.toplam_tutar}</span>
+                            </div>
+
+                            <button onclick="siparisTamamla(${siparis.id})" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition active:scale-95 text-lg shadow-lg shadow-green-900/20">
+                                ✅ HAZIR / SİL
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (error) { 
+                document.getElementById("durum").innerText = "🔴 BAĞLANTI KOPTU!";
+                document.getElementById("durum").className = "text-red-500 font-bold animate-pulse px-4 py-2 bg-gray-800 rounded-xl border border-red-900/30";
+            }
+        }
+
+        async function siparisTamamla(id) {
+            try {
+                const response = await fetch(`${API_URL}/api/mutfak/siparis-tamamla/${id}`, {method: "POST"});
+                if (response.ok) {
+                    siparisleriGetir(); 
+                }
+            } catch (e) { alert("Hata: Sipariş kapatılamadı!"); }
+        }
+
+        // 2 saniyede bir kontrol et
+        setInterval(siparisleriGetir, 2000);
+        siparisleriGetir();
+    </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Emir Büfe - Patron Ekranı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> 
+        body { background-color: #f1f5f9; color: #0f172a; font-family: sans-serif; } 
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-5xl mx-auto">
+        
+        <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight">💼 Patron Paneli</h1>
+                <p class="text-gray-500 font-medium mt-1">Canlı Ciro ve Sipariş Takibi</p>
+            </div>
+            <div id="durum" class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl font-bold animate-pulse">
+                Sisteme Bağlanıyor...
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-3xl text-white shadow-lg">
+                <h3 class="text-green-100 font-bold mb-1">GÜNLÜK NET CİRO</h3>
+                <div class="text-4xl font-black" id="net-ciro">₺0</div>
+                <p class="text-sm font-medium mt-2 opacity-80">Tamamlanan siparişler</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-3xl text-white shadow-lg">
+                <h3 class="text-orange-100 font-bold mb-1">MASALARDAKİ PARA</h3>
+                <div class="text-4xl font-black" id="bekleyen-ciro">₺0</div>
+                <p class="text-sm font-medium mt-2 opacity-80">Hazırlanan siparişler</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                <h3 class="text-gray-500 font-bold mb-1 text-sm">TAMAMLANAN SİPARİŞ</h3>
+                <div class="text-3xl font-black text-gray-800" id="tamamlanan-adet">0</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
+                <h3 class="text-gray-500 font-bold mb-1 text-sm">BEKLEYEN SİPARİŞ</h3>
+                <div class="text-3xl font-black text-orange-500" id="bekleyen-adet">0</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-xl font-bold">📜 Tüm Sipariş Geçmişi (Canlı)</h2>
+            </div>
+            <div class="p-0">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm">
+                            <th class="p-4 font-bold border-b border-gray-100">Fiş No</th>
+                            <th class="p-4 font-bold border-b border-gray-100">Masa</th>
+                            <th class="p-4 font-bold border-b border-gray-100">Tutar</th>
+                            <th class="p-4 font-bold border-b border-gray-100">Durum</th>
+                            <th class="p-4 font-bold border-b border-gray-100">Saat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gecmis-tablosu" class="divide-y divide-gray-100">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        async function patronRaporuCek() {
+            try {
+                const response = await fetch(`${API_URL}/api/patron/rapor`);
+                if (!response.ok) throw new Error("Bağlantı Hatası");
+                const data = await response.json();
+
+                // Radarı yeşil yap
+                document.getElementById("durum").innerText = "🟢 CANLI";
+                document.getElementById("durum").className = "px-4 py-2 bg-green-100 text-green-700 rounded-xl font-bold";
+
+                // Rakamları güncelle
+                document.getElementById("net-ciro").innerText = `₺${data.gunluk_ciro}`;
+                document.getElementById("bekleyen-ciro").innerText = `₺${data.bekleyen_ciro}`;
+                document.getElementById("tamamlanan-adet").innerText = data.tamamlanan_siparis_sayisi;
+                document.getElementById("bekleyen-adet").innerText = data.bekleyen_siparis_sayisi;
+
+                // Tabloyu güncelle
+                const tablo = document.getElementById("gecmis-tablosu");
+                tablo.innerHTML = "";
+
+                data.gecmis.forEach(s => {
+                    let durumRengi = s.durum === "Tamamlandı" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700 animate-pulse";
+                    
+                    tablo.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="p-4 font-bold text-gray-500">#${s.id}</td>
+                            <td class="p-4 font-extrabold">Masa ${s.masa_no}</td>
+                            <td class="p-4 font-black text-[#0f172a]">₺${s.toplam_tutar}</td>
+                            <td class="p-4"><span class="px-3 py-1 rounded-lg text-xs font-bold ${durumRengi}">${s.durum}</span></td>
+                            <td class="p-4 font-bold text-gray-500">${s.zaman}</td>
+                        </tr>
+                    `;
+                });
+
+            } catch (error) {
+                document.getElementById("durum").innerText = "🔴 BAĞLANTI KOPTU";
+                document.getElementById("durum").className = "px-4 py-2 bg-red-100 text-red-700 rounded-xl font-bold animate-pulse";
+            }
+        }
+
+        // 2 saniyede bir parayı say!
+        setInterval(patronRaporuCek, 2000);
+        patronRaporuCek();
+    </script>
+</body>
+</html>

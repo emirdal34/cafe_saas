@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emir Büfe - Hızlı Kasa (POS)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #e2e8f0; color: #0f172a; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .urun-btn { transition: all 0.1s; }
+        .urun-btn:active { transform: scale(0.95); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            // === KASA ARTIK MENÜYÜ MOTORDAN ÇEKİYOR ===
+            const [MENU_VERISI, setMenuVerisi] = useState([]);
+            const [menulerYuklendi, setMenulerYuklendi] = useState(false);
+            const [seciliKategori, setSeciliKategori] = useState(null);
+
+            useEffect(() => {
+                fetch("http://127.0.0.1:8000/api/menu")
+                    .then(res => res.json())
+                    .then(data => {
+                        setMenuVerisi(data);
+                        setSeciliKategori(data[0]); // Sayfa açılınca ilk kategoriyi seç
+                        setMenulerYuklendi(true);
+                    })
+                    .catch(err => {
+                        console.error("Motor kapalı!", err);
+                        alert("Motor kapalı! Lütfen terminalden Python'u çalıştırın.");
+                    });
+            }, []);
+
+            const [cart, setCart] = useState([]);
+            const [siparisIsmi, setSiparisIsmi] = useState("Paket / Ayakta"); 
+            const [secenekModalUrun, setSecenekModalUrun] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+
+            const addToCart = (urun, secilenSecenek = null) => {
+                if (urun.secenekler && !secilenSecenek) { setSecenekModalUrun(urun); return; }
+
+                let eklenecekUrun = { ...urun };
+                let sepetBenzersizId = urun.id;
+
+                if (secilenSecenek) {
+                    eklenecekUrun.ad = `${urun.ad} (${secilenSecenek.ad})`;
+                    eklenecekUrun.fiyat = secilenSecenek.fiyat;
+                    sepetBenzersizId = `${urun.id}-${secilenSecenek.id}`;
+                }
+
+                eklenecekUrun.sepetId = sepetBenzersizId;
+
+                setCart(prev => {
+                    const varMi = prev.find(i => i.sepetId === sepetBenzersizId);
+                    if (varMi) return prev.map(i => i.sepetId === sepetBenzersizId ? {...i, quantity: i.quantity + 1} : i);
+                    return [...prev, {...eklenecekUrun, quantity: 1}];
+                });
+                setSecenekModalUrun(null);
+            };
+
+            const updateQuantity = (sepetId, delta) => {
+                setCart(prev => prev.map(item => {
+                    if (item.sepetId === sepetId) {
+                        const newQty = Math.max(0, item.quantity + delta);
+                        return newQty === 0 ? null : {...item, quantity: newQty};
+                    }
+                    return item;
+                }).filter(Boolean));
+            };
+
+            const cartTotal = cart.reduce((sum, item) => sum + (item.fiyat * item.quantity), 0);
+
+            const submitOrder = async () => {
+                if (cart.length === 0) return alert("Sepet boş!");
+                setIsLoading(true);
+                
+                try {
+                    const apiSepet = cart.map(item => ({ sepetId: item.sepetId, ad: item.ad, fiyat: parseFloat(item.fiyat), quantity: item.quantity }));
+                    const response = await fetch("http://127.0.0.1:8000/api/siparis-ver", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ masa_no: siparisIsmi, sepet: apiSepet, notlar: "KASADAN GİRİLDİ" })
+                    });
+
+                    if (response.ok) {
+                        setCart([]); 
+                        setSiparisIsmi("Paket / Ayakta"); 
+                    } else { alert("Hata: Sipariş gitmedi!"); }
+                } catch (error) { alert("Sistem motoru kapalı!"); } 
+                finally { setIsLoading(false); }
+            };
+
+            if (!menulerYuklendi || !seciliKategori) {
+                return <div className="flex h-screen items-center justify-center font-bold text-xl text-gray-500">Kasa Sistemi Yükleniyor...</div>;
+            }
+
+            return (
+                <div className="flex h-screen">
+                    {/* SOL TARAF: KATEGORİLER VE ÜRÜNLER */}
+                    <div className="w-2/3 bg-white flex flex-col border-r border-gray-200">
+                        {/* Kategori Barları */}
+                        <div className="flex overflow-x-auto bg-[#0f172a] p-3 gap-2 shrink-0 shadow-md z-10">
+                            {MENU_VERISI.map(kat => (
+                                <button key={kat.id} onClick={() => setSeciliKategori(kat)} 
+                                    className={`whitespace-nowrap px-5 py-3 rounded-xl font-bold text-sm transition-all ${seciliKategori.id === kat.id ? 'bg-orange-500 text-white shadow-lg' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
+                                    {kat.kategoriAdi}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {/* Ürün Izgarası (Büyük Butonlar) */}
+                        <div className="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-[#f8fafc] flex-1">
+                            {seciliKategori.urunler.map(u => (
+                                <button key={u.id} onClick={() => addToCart(u)} className="urun-btn bg-white border-2 border-gray-100 p-4 rounded-2xl shadow-sm text-left flex flex-col justify-between h-32 hover:border-orange-400 hover:shadow-md">
+                                    <span className="font-extrabold text-[#0f172a] text-lg leading-tight">{u.ad}</span>
+                                    <span className="font-black text-orange-600 text-xl">{u.secenekler ? `Seçenekli` : `₺${u.fiyat}`}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* SAĞ TARAF: SEPET VE ADİSYON */}
+                    <div className="w-1/3 bg-white flex flex-col h-screen">
+                        <div className="p-5 bg-gray-50 border-b border-gray-200">
+                            <h2 className="text-xl font-black text-[#0f172a] mb-3">🧾 Yeni Adisyon</h2>
+                            <div className="bg-white border border-gray-300 rounded-xl flex items-center p-1 shadow-inner">
+                                <span className="bg-gray-200 px-3 py-2 rounded-lg font-bold text-gray-600 text-sm">Müşteri/Masa:</span>
+                                <input type="text" value={siparisIsmi} onChange={e => setSiparisIsmi(e.target.value)} className="flex-1 p-2 font-bold outline-none text-[#0f172a] bg-transparent" />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            {cart.length === 0 ? ( <div className="text-center text-gray-400 mt-10 font-bold">Sepet Boş</div> ) : (
+                                cart.map(item => (
+                                    <div key={item.sepetId} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                        <div className="flex-1 pr-2">
+                                            <div className="font-bold text-sm text-[#0f172a]">{item.ad}</div>
+                                            <div className="font-extrabold text-orange-600">₺{item.fiyat}</div>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-lg px-2 py-1">
+                                            <button onClick={() => updateQuantity(item.sepetId, -1)} className="w-6 h-6 font-bold text-xl text-gray-600 flex justify-center items-center hover:bg-gray-100 rounded">-</button>
+                                            <span className="font-bold text-[#0f172a] w-4 text-center">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(item.sepetId, 1)} className="w-6 h-6 font-bold text-xl text-gray-600 flex justify-center items-center hover:bg-gray-100 rounded">+</button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="p-6 bg-gray-50 border-t border-gray-200">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-gray-500 font-bold">GENEL TOPLAM</span>
+                                <span className="text-4xl font-black text-[#0f172a]">₺{cartTotal}</span>
+                            </div>
+                            <button onClick={submitOrder} disabled={isLoading || cart.length === 0} className={`w-full py-5 rounded-2xl font-black text-xl text-white transition-all ${cart.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-400 shadow-[0_10px_20px_rgba(34,197,94,0.3)] active:scale-95'}`}>
+                                {isLoading ? 'GÖNDERİLİYOR...' : 'SİPARİŞİ MUTFAĞA YAZDIR'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* SEÇENEK MODALI (Yarım/Tam seçimi için) */}
+                    {secenekModalUrun && (
+                        <div className="modal-overlay" onClick={() => setSecenekModalUrun(null)}>
+                            <div className="bg-white w-[400px] p-6 rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-2xl font-black mb-4">{secenekModalUrun.ad}</h3>
+                                <div className="space-y-3">
+                                    {secenekModalUrun.secenekler.map(secenek => (
+                                        <button key={secenek.id} onClick={() => addToCart(secenekModalUrun, secenek)} className="w-full flex justify-between p-4 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:border-orange-500 hover:bg-orange-50 transition">
+                                            <span className="font-bold text-lg">{secenek.ad}</span>
+                                            <span className="font-black text-orange-600 text-lg">₺{secenek.fiyat}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={() => setSecenekModalUrun(null)} className="mt-4 w-full py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300">İPTAL</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
+    </script>
+</body>
+</html>
