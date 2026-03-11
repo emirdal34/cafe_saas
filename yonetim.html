@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <script>
+        if(localStorage.getItem("procount_auth") !== "patron") {
+            window.location.href = "index.html";
+        }
+    </script>
+    <meta charset="UTF-8">
+    ...
     <meta charset="UTF-8">
     <title>Emir Büfe - Patron Paneli</title>
     <script src="https://cdn.tailwindcss.com"></script>

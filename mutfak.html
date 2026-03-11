@@ -11,6 +11,20 @@
         .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
+    <script>
+        if(localStorage.getItem("procount_auth") !== "mutfak" && localStorage.getItem("procount_auth") !== "patron") {
+            window.location.href = "index.html";
+        }
+    </script>
+    <meta charset="UTF-8">
+    ...
+    <script>
+        if(localStorage.getItem("procount_auth") !== "mutfak" && localStorage.getItem("procount_auth") !== "patron") {
+            window.location.href = "index.html";
+        }
+    </script>
+    <meta charset="UTF-8">
+    ...
 <body class="p-6">
     <audio id="bildirimSesi" src="siparis.mp3" preload="auto"></audio>
 
