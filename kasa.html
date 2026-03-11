@@ -10,26 +10,24 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; overflow: hidden; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .urun-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .urun-btn:active { transform: scale(0.97); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; }
-    </style>
-</head>
-<head>
     <script>
         if(localStorage.getItem("procount_auth") !== "kasa" && localStorage.getItem("procount_auth") !== "patron") {
             window.location.href = "index.html";
         }
     </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    ...
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .urun-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .urun-btn:active { transform: scale(0.97); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .category-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
@@ -41,16 +39,17 @@
             const [seciliKategori, setSeciliKategori] = useState(null);
 
             useEffect(() => {
-                fetch("http://127.0.0.1:8000/api/menu")
+                // Render linkin otomatik aktif (Senin image_e51d66.png dosyadaki linkin)
+                fetch("https://cafe-saas.onrender.com/api/menu")
                     .then(res => res.json())
                     .then(data => {
                         setMenuVerisi(data);
-                        setSeciliKategori(data[0]); 
+                        setSeciliKategori(data[0]);
                         setMenulerYuklendi(true);
                     })
                     .catch(err => {
                         console.error("Motor kapalı!", err);
-                        alert("Motor kapalı! Lütfen terminalden Python'u çalıştırın.");
+                        alert("Motor kapalı! Render uyanıyor olabilir, lütfen sayfayı yenileyin.");
                     });
             }, []);
 
@@ -113,18 +112,18 @@
             };
 
             if (!menulerYuklendi || !seciliKategori) {
-                return <div className="flex h-screen items-center justify-center font-semibold text-sm tracking-widest text-slate-400 uppercase">Kasa Sistemi Başlatılıyor...</div>;
+                return <div className="flex h-screen items-center justify-center font-semibold text-sm tracking-widest text-slate-400 uppercase">Sistem Yükleniyor...</div>;
             }
 
             return (
                 <div className="flex h-screen bg-slate-50">
-                    {/* SOL TARAF: KATEGORİLER VE ÜRÜNLER */}
-                    <div className="w-2/3 flex flex-col border-r border-slate-200 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+                    {/* SOL TARAF: ÜRÜN SEÇİMİ */}
+                    <div className="w-2/3 flex flex-col bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
                         {/* Kategori Barları */}
-                        <div className="flex overflow-x-auto p-4 gap-3 shrink-0 border-b border-slate-100 bg-white">
+                        <div className="flex overflow-x-auto p-4 gap-3 shrink-0 border-b border-slate-100 bg-white category-scroll">
                             {MENU_VERISI.map(kat => (
                                 <button key={kat.id} onClick={() => setSeciliKategori(kat)} 
-                                    className={`whitespace-nowrap px-6 py-3 rounded-full font-semibold text-sm transition-all border ${seciliKategori.id === kat.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'}`}>
+                                    className={`whitespace-nowrap px-6 py-3 rounded-full font-bold text-sm transition-all border ${seciliKategori.id === kat.id ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'}`}>
                                     {kat.kategoriAdi}
                                 </button>
                             ))}
@@ -135,24 +134,28 @@
                             {seciliKategori.urunler.map(u => (
                                 <button key={u.id} onClick={() => addToCart(u)} className="urun-btn group bg-white border border-slate-200 p-5 rounded-2xl shadow-sm text-left flex flex-col justify-between h-36 hover:border-blue-500 hover:shadow-lg relative overflow-hidden">
                                     <span className="font-bold text-slate-800 text-base leading-snug group-hover:text-blue-700 transition-colors">{u.ad}</span>
-                                    <span className="font-black text-slate-900 text-xl tracking-tight">{u.secenekler ? <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">Seçenekli</span> : `₺${u.fiyat}`}</span>
+                                    <span className="font-black text-slate-900 text-xl tracking-tight">
+                                        {u.secenekler ? <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md uppercase">Seçenekli</span> : `₺${u.fiyat}`}
+                                    </span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* SAĞ TARAF: SEPET VE ADİSYON */}
+                    {/* SAĞ TARAF: ADİSYON FİŞİ */}
                     <div className="w-1/3 bg-white flex flex-col h-screen relative">
                         <div className="p-6 border-b border-slate-100 bg-white">
                             <h2 className="text-lg font-bold text-slate-900 mb-4 tracking-tight uppercase">Adisyon Detayı</h2>
                             <div className="bg-slate-50 border border-slate-200 rounded-xl flex items-center p-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                                <span className="bg-white px-3 py-2 rounded-lg font-semibold text-slate-500 text-xs uppercase tracking-wider shadow-sm border border-slate-100">Müşteri/Masa</span>
+                                <span className="bg-white px-3 py-2 rounded-lg font-semibold text-slate-500 text-[10px] uppercase tracking-wider shadow-sm border border-slate-100">REFERANS</span>
                                 <input type="text" value={siparisIsmi} onChange={e => setSiparisIsmi(e.target.value)} className="flex-1 p-2 font-bold text-sm outline-none text-slate-800 bg-transparent px-3" />
                             </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-slate-50/30">
-                            {cart.length === 0 ? ( <div className="text-center text-slate-400 mt-20 font-medium text-sm">Sepette ürün bulunmuyor</div> ) : (
+                            {cart.length === 0 ? ( 
+                                <div className="text-center text-slate-400 mt-20 font-medium text-sm italic">Henüz ürün eklenmedi</div> 
+                            ) : (
                                 cart.map(item => (
                                     <div key={item.sepetId} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-slate-200 transition-colors">
                                         <div className="flex-1 pr-3">
@@ -171,10 +174,10 @@
 
                         <div className="p-6 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-20">
                             <div className="flex justify-between items-end mb-6">
-                                <span className="text-slate-500 font-semibold text-sm uppercase tracking-wider">Genel Toplam</span>
-                                <span className="text-4xl font-black text-slate-900 tracking-tight">₺{cartTotal}</span>
+                                <span className="text-slate-500 font-semibold text-xs uppercase tracking-widest">Genel Toplam</span>
+                                <span className="text-4xl font-black text-slate-900 tracking-tighter">₺{cartTotal}</span>
                             </div>
-                            <button onClick={submitOrder} disabled={isLoading || cart.length === 0} className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_8px_20px_rgba(37,99,235,0.24)] active:scale-[0.98]'}`}>
+                            <button onClick={submitOrder} disabled={isLoading || cart.length === 0} className={`w-full py-5 rounded-2xl font-bold text-base transition-all ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_8px_20px_rgba(37,99,235,0.24)] active:scale-[0.98]'}`}>
                                 {isLoading ? 'İŞLENİYOR...' : 'SİPARİŞİ ONAYLA'}
                             </button>
                         </div>
@@ -183,7 +186,7 @@
                     {/* SEÇENEK MODALI */}
                     {secenekModalUrun && (
                         <div className="modal-overlay" onClick={() => setSecenekModalUrun(null)}>
-                            <div className="bg-white w-[420px] p-8 rounded-[2rem] shadow-2xl transform transition-all scale-100" onClick={e => e.stopPropagation()}>
+                            <div className="bg-white w-[420px] p-8 rounded-[2rem] shadow-2xl" onClick={e => e.stopPropagation()}>
                                 <h3 className="text-xl font-bold text-slate-900 mb-6">{secenekModalUrun.ad}</h3>
                                 <div className="space-y-3">
                                     {secenekModalUrun.secenekler.map(secenek => (
@@ -193,7 +196,7 @@
                                         </button>
                                     ))}
                                 </div>
-                                <button onClick={() => setSecenekModalUrun(null)} className="mt-6 w-full py-3.5 bg-slate-100 text-slate-600 font-semibold rounded-2xl hover:bg-slate-200 transition-colors">Vazgeç</button>
+                                <button onClick={() => setSecenekModalUrun(null)} className="mt-6 w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors">VAZGEÇ</button>
                             </div>
                         </div>
                     )}
