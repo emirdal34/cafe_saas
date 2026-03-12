@@ -39,11 +39,10 @@
     </div>
 
     <script>
-        // === ŞİFRE BELİRLEME ALANI ===
         const SIFRELER = {
             "1234": { rol: "kasa", url: "kasa.html" },
             "5678": { rol: "mutfak", url: "mutfak.html" },
-            "8888": { rol: "patron", url: "patron.html" } // Patron şifresi yonetim.html'e de girebilir
+            "8888": { rol: "patron", url: "patron.html" }
         };
 
         function girisYap(e) {
@@ -52,9 +51,7 @@
             const hata = document.getElementById('hata-mesaji');
 
             if (SIFRELER[pin]) {
-                // Şifre doğruysa bilgisayarın hafızasına "Yetki Mührü" vur
                 localStorage.setItem("procount_auth", SIFRELER[pin].rol);
-                // İlgili sayfaya yönlendir
                 window.location.href = SIFRELER[pin].url;
             } else {
                 hata.classList.remove('hidden');
@@ -63,7 +60,6 @@
             }
         }
 
-        // Eğer zaten giriş yapılmışsa, direkt sayfasına at
         window.onload = function() {
             const yetki = localStorage.getItem("procount_auth");
             if(yetki === "kasa") window.location.href = "kasa.html";

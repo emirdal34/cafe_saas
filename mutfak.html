@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Emir Büfe - Mutfak Sipariş Paneli</title>
+    
+    <script>
+        if(localStorage.getItem("procount_auth") !== "mutfak" && localStorage.getItem("procount_auth") !== "patron") {
+            window.location.href = "index.html";
+        }
+    </script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style> 
         body { background-color: #0f172a; color: white; font-family: sans-serif; overflow-x: hidden; } 
@@ -11,20 +18,6 @@
         .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
-    <script>
-        if(localStorage.getItem("procount_auth") !== "mutfak" && localStorage.getItem("procount_auth") !== "patron") {
-            window.location.href = "index.html";
-        }
-    </script>
-    <meta charset="UTF-8">
-    ...
-    <script>
-        if(localStorage.getItem("procount_auth") !== "mutfak" && localStorage.getItem("procount_auth") !== "patron") {
-            window.location.href = "index.html";
-        }
-    </script>
-    <meta charset="UTF-8">
-    ...
 <body class="p-6">
     <audio id="bildirimSesi" src="siparis.mp3" preload="auto"></audio>
 
@@ -43,7 +36,7 @@
     <script>
         const API_URL = "https://cafe-saas.onrender.com";
         let eskiSiparisSayisi = 0;
-        let eskiGarsonSayisi = 0; // Garson çağrılarını takip etmek için ekledik
+        let eskiGarsonSayisi = 0;
 
         async function siparisleriGetir() {
             try {
@@ -57,7 +50,6 @@
                 document.getElementById("durum").innerText = "🟢 Sistem Aktif";
                 document.getElementById("durum").className = "text-green-400 font-bold px-4 py-2 bg-gray-800 rounded-xl border border-green-900/30";
                 
-                // === ZİL ÇALMA MANTIĞI: Sipariş VEYA Garson çağrısı artarsa çal ===
                 if (data.siparisler.length > eskiSiparisSayisi || data.garson_cagrilari.length > eskiGarsonSayisi) {
                     bildirim.play().catch(e => console.log("Sesi başlatmak için ekrana bir kez tıkla!"));
                 }
@@ -66,7 +58,6 @@
 
                 kutu.innerHTML = ""; 
                 
-                // 1. Önce Garson Çağrılarını Göster (En üste düşsün)
                 data.garson_cagrilari.forEach(cagri => {
                     kutu.innerHTML += `
                         <div class="bg-red-900/30 p-6 rounded-3xl border-l-8 border-red-500 shadow-2xl animate-pulse-slow">
@@ -85,7 +76,6 @@
                     `;
                 });
 
-                // 2. Normal Siparişleri Göster
                 if (data.siparisler.length === 0 && data.garson_cagrilari.length === 0) {
                     kutu.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500 font-bold text-xl italic">Henüz bekleyen bir iş yok...</div>`;
                     return;

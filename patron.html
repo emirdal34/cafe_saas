@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <meta charset="UTF-8">
+    <title>Emir Büfe - Patron Ekranı</title>
+    
     <script>
         if(localStorage.getItem("procount_auth") !== "patron") {
             window.location.href = "index.html";
         }
     </script>
-    
-    <meta charset="UTF-8">
-    <title>Emir Büfe - Patron Ekranı</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style> 
         body { background-color: #f1f5f9; color: #0f172a; font-family: sans-serif; } 
@@ -17,7 +18,6 @@
 </head>
 <body class="p-6">
     <div class="max-w-5xl mx-auto">
-        
         <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight">💼 Patron Paneli</h1>
@@ -72,7 +72,6 @@
                 </table>
             </div>
         </div>
-        
     </div>
 
     <script>
@@ -84,17 +83,14 @@
                 if (!response.ok) throw new Error("Bağlantı Hatası");
                 const data = await response.json();
 
-                // Radarı yeşil yap
                 document.getElementById("durum").innerText = "🟢 CANLI";
                 document.getElementById("durum").className = "px-4 py-2 bg-green-100 text-green-700 rounded-xl font-bold";
 
-                // Rakamları güncelle
                 document.getElementById("net-ciro").innerText = `₺${data.gunluk_ciro}`;
                 document.getElementById("bekleyen-ciro").innerText = `₺${data.bekleyen_ciro}`;
                 document.getElementById("tamamlanan-adet").innerText = data.tamamlanan_siparis_sayisi;
                 document.getElementById("bekleyen-adet").innerText = data.bekleyen_siparis_sayisi;
 
-                // Tabloyu güncelle
                 const tablo = document.getElementById("gecmis-tablosu");
                 tablo.innerHTML = "";
 
@@ -118,7 +114,6 @@
             }
         }
 
-        // 2 saniyede bir parayı say!
         setInterval(patronRaporuCek, 2000);
         patronRaporuCek();
     </script>

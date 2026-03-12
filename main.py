@@ -5,24 +5,28 @@ from pydantic import BaseModel
 from typing import List, Union, Optional
 import datetime
 
-app = FastAPI(title="Emir Büfe API", version="7.0")
+app = FastAPI(title="Emir Büfe API", version="8.0")
 
+# Güvenlik ve CORS İzinleri
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware, 
+    allow_origins=["*"], 
+    allow_credentials=True, 
+    allow_methods=["*"], 
+    allow_headers=["*"],
 )
 
 aktif_siparisler = []
 garson_cagrilari = []
 siparis_id_sayaci = 1
 
-# === SENİN EMEK VERDİĞİN FOTOĞRAFLI VE AÇIKLAMALI MENÜ ===
 MENU_VERISI = [
     {
         "id": "kategori_kahvalti", "kategoriAdi": "Kahvaltılıklar", "kategoriResmi": "fotolar/bukahvaltı.jpg",
         "urunler": [
             { "id": 601, "ad": "Menemen Çeşitleri", "aciklama": "Taze domates ve biberle, sıcacık", "resim": "fotolar/melemen.jpg", "fiyat": None, "secenekler": [ {"id": "klasik", "ad": "Klasik Menemen", "fiyat": 100}, {"id": "kasarli", "ad": "Kaşarlı Menemen", "fiyat": 130}, {"id": "sucuklu", "ad": "Sucuklu Menemen", "fiyat": 140}, {"id": "kavurmali", "ad": "Kavurmalı Menemen", "fiyat": 160}, {"id": "karisik", "ad": "Karışık Menemen", "fiyat": 180} ] },
             { "id": 602, "ad": "Sahanda Yumurta", "aciklama": "Tereyağında enfes yumurta", "resim": "fotolar/sahandayumurta.webp", "fiyat": None, "secenekler": [ {"id": "klasik", "ad": "Klasik Yumurta", "fiyat": 80}, {"id": "kasarli", "ad": "Kaşarlı Yumurta", "fiyat": 100}, {"id": "sucuklu", "ad": "Sucuklu Yumurta", "fiyat": 120}, {"id": "kavurmali", "ad": "Kavurmalı Yumurta", "fiyat": 140}, {"id": "karisik", "ad": "Karışık Yumurta", "fiyat": 160} ] },
-            { "id": 603, "ad": "Kahvaltı Tabağı", "aciklama": "bol çeşir serpme kahvaltı", "resim": "fotolar/kahvaltılıklar.jpg", "fiyat": 250, "secenekler": None },
+            { "id": 603, "ad": "Kahvaltı Tabağı", "aciklama": "Bol çeşit serpme kahvaltı", "resim": "fotolar/kahvaltılıklar.jpg", "fiyat": 250, "secenekler": None },
             { "id": 604, "ad": "Sadece Sucuk (Porsiyon)", "aciklama": "Özel kasap sucuk tava", "resim": "fotolar/busucuk.jpg", "fiyat": 180, "secenekler": None }
         ]
     },
@@ -34,7 +38,7 @@ MENU_VERISI = [
             { "id": 102, "ad": "Atom Tost", "aciklama": "Sucuk, kaşar, domates, biber, salam", "resim": "fotolar/atom.jpg", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 140}, {"id": "ucceyrek", "ad": "Üç Çeyrek", "fiyat": 170}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 200} ] },
             { "id": 103, "ad": "Soğuk Sandviç", "aciklama": "Domates, kırmızı biber, yeşil biber, marul, kaşar, zeytin, salam, haşlanmış yumurta", "resim": "fotolar/sandavic.jpg", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 100}, {"id": "ucceyrek", "ad": "Üç Çeyrek", "fiyat": 130}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 160} ] },
             { "id": 104, "ad": "Köfte Ekmek", "aciklama": "Izgara köfte, sumaklı soğan, domates", "resim": "fotolar/köfte.avif", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 120}, {"id": "ucceyrek", "ad": "Üç Çeyrek", "fiyat": 160}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 200} ] },
-            { "id": 105, "ad": "Sucuk Ekmek", "aciklama": "Kasap sucuk, domates, baharat", "resim": "fotolar/sucuk.webp", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 100},{"id": "ucceyrek ", "ad": "üç çeyrek" , "fiyat": 150}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 180} ] },
+            { "id": 105, "ad": "Sucuk Ekmek", "aciklama": "Kasap sucuk, domates, baharat", "resim": "fotolar/sucuk.webp", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 100},{"id": "ucceyrek ", "ad": "Üç Çeyrek" , "fiyat": 150}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 180} ] },
             { "id": 106, "ad": "Patso", "aciklama": "Bol patates kızartması, ketçap, mayonez", "resim": "fotolar/patso.jpg", "fiyat": None, "secenekler": [ {"id": "yarim", "ad": "Yarım Ekmek", "fiyat": 60}, {"id": "tam", "ad": "Tam Ekmek", "fiyat": 100} ] }
         ]
     },
@@ -43,7 +47,7 @@ MENU_VERISI = [
         "urunler": [
             { "id": 201, "ad": "Kaşarlı Gözleme", "aciklama": "El açması yufka, bol erimiş kaşar", "fiyat": 110, "resim": "fotolar/kasarlig.jpg", "secenekler": None },
             { "id": 202, "ad": "Karışık Gözleme", "aciklama": "Sucuk, kaşar, yeşil biber, kırmızı biber", "fiyat": 140, "resim": "fotolar/karişikg.jpg", "secenekler": None },
-            { "id": 203, "ad": "sucuklu gözleme", "aciklama": "bol sucuklu gözleme", "fiyat": 130, "resim": "fotolar/sucuklug.jpg", "secenekler": None },
+            { "id": 203, "ad": "Sucuklu Gözleme", "aciklama": "Bol sucuklu gözleme", "fiyat": 130, "resim": "fotolar/sucuklug.jpg", "secenekler": None },
             { "id": 204, "ad": "Patatesli Gözleme", "aciklama": "Özel baharatlı patates dolgulu", "fiyat": 120, "resim": "fotolar/patateslig.jpg", "secenekler": None }
         ]
     },
@@ -61,7 +65,7 @@ MENU_VERISI = [
             { "id": 309, "ad": "Çubuk Kraker", "aciklama": "Tuzlu atıştırmalık", "fiyat": 10, "resim": "fotolar/çubuk.webp", "secenekler": None },
             { "id": 310, "ad": "Popkek Çeşitleri", "aciklama": "Efsane kek", "resim": "fotolar/popkek.jpg", "fiyat": None, "secenekler": [ {"id": "ciko", "ad": "Çikolatalı", "fiyat": 15}, {"id": "visne", "ad": "Vişneli", "fiyat": 15}, {"id": "limon", "ad": "Limonlu", "fiyat": 15}, {"id": "bitter", "ad": "Bitterli", "fiyat": 15}, {"id": "muz", "ad": "Muzlu", "fiyat": 15}, {"id": "portakal", "ad": "Portakallı", "fiyat": 15} ] },
             { "id": 311, "ad": "Biskrem", "aciklama": "Çikolata dolgulu bisküvi", "fiyat": 20, "resim": "fotolar/biskrem.webp", "secenekler": None },
-            { "id": 312, "ad": "Ülker Kremalı bisküvi", "aciklama": "Kremalı bisküvi", "fiyat": 15, "resim": "fotolar/sandaviç bisküvi.jpg", "secenekler": None },
+            { "id": 312, "ad": "Ülker Kremalı Bisküvi", "aciklama": "Kremalı bisküvi", "fiyat": 15, "resim": "fotolar/sandaviç bisküvi.jpg", "secenekler": None },
             { "id": 313, "ad": "Nero", "aciklama": "Kakaolu kremalı bisküvi", "fiyat": 20, "resim": "fotolar/nero.jpg", "secenekler": None }
         ]
     },
@@ -81,12 +85,12 @@ MENU_VERISI = [
             { "id": 503, "ad": "Coca Cola (Büyük Boy)", "aciklama": "Litrelik Kola", "resim": "fotolar/litrelikkola.jpg", "fiyat": None, "secenekler": [ {"id": "1L", "ad": "1 Litre", "fiyat": 45}, {"id": "1.5L", "ad": "1.5 Litre", "fiyat": 55}, {"id": "2L", "ad": "2 Litre", "fiyat": 65}, {"id": "2.5L", "ad": "2.5 Litre", "fiyat": 75} ] },
             { "id": 504, "ad": "Fanta (Büyük Boy)", "aciklama": "Litrelik Fanta", "resim": "fotolar/litrelikfanta.jpg", "fiyat": None, "secenekler": [ {"id": "1L", "ad": "1 Litre", "fiyat": 45}, {"id": "1.5L", "ad": "1.5 Litre", "fiyat": 55}, {"id": "2L", "ad": "2 Litre", "fiyat": 65}, {"id": "2.5L", "ad": "2.5 Litre", "fiyat": 75} ] },
             { "id": 519, "ad": "Su", "aciklama": "Pet şişe su", "fiyat": 15, "resim": "fotolar/su.jpg", "secenekler": None },
-            { "id": 505, "ad": "Şeftalili Kutu Meyve Suyu", "aciklama": "meyve suyu", "fiyat": 25, "resim": "fotolar/şeftali.webp", "secenekler": None },
-            { "id": 506, "ad": "Vişneli Kutu Meyve Suyu", "aciklama": "meyve suyu", "fiyat": 25, "resim": "fotolar/vişne.webp", "secenekler": None },
-            { "id": 507, "ad": "Karışık Kutu Meyve Suyu", "aciklama": "meyve suyu", "fiyat": 25, "resim": "fotolar/karışık.webp", "secenekler": None },
+            { "id": 505, "ad": "Şeftalili Kutu Meyve Suyu", "aciklama": "Meyve suyu", "fiyat": 25, "resim": "fotolar/şeftali.webp", "secenekler": None },
+            { "id": 506, "ad": "Vişneli Kutu Meyve Suyu", "aciklama": "Meyve suyu", "fiyat": 25, "resim": "fotolar/vişne.webp", "secenekler": None },
+            { "id": 507, "ad": "Karışık Kutu Meyve Suyu", "aciklama": "Meyve suyu", "fiyat": 25, "resim": "fotolar/karışık.webp", "secenekler": None },
             { "id": 508, "ad": "Didi Soğuk Çay", "aciklama": "Teneke (500ml)", "fiyat": 30, "resim": "fotolar/didi.jpg", "secenekler": None },
             { "id": 509, "ad": "Gazoz", "aciklama": "Serinletici", "fiyat": 30, "resim": "fotolar/gazoz.jpg", "secenekler": None },
-            { "id": 510, "ad": "Uludağ Limonata", "aciklama": "soğuk limonata (0.5 L)", "fiyat": 40, "resim": "fotolar/limonata.jpg", "secenekler": None },
+            { "id": 510, "ad": "Uludağ Limonata", "aciklama": "Soğuk limonata (0.5 L)", "fiyat": 40, "resim": "fotolar/limonata.jpg", "secenekler": None },
             { "id": 511, "ad": "Ayran", "aciklama": "Köpüklü yayık ayranı", "fiyat": 25, "resim": "fotolar/ayran.jpg", "secenekler": None },
             { "id": 512, "ad": "Sade Soda", "aciklama": "Doğal maden suyu", "fiyat": 20, "resim": "fotolar/sade.jpg", "secenekler": None },
             { "id": 513, "ad": "Limonlu Soda", "aciklama": "Meyveli maden suyu", "fiyat": 25, "resim": "fotolar/limonlu.jpg", "secenekler": None },
@@ -98,6 +102,7 @@ MENU_VERISI = [
     }
 ]
 
+# Modeller
 class SiparisKalemi(BaseModel):
     sepetId: Union[str, int]
     ad: str
@@ -120,6 +125,7 @@ class UrunEkleModel(BaseModel):
     ad: str
     fiyat: float
 
+# Yönlendirmeler
 @app.delete("/api/admin/urun-sil/{kategori_id}/{urun_id}")
 def urun_sil(kategori_id: str, urun_id: int):
     for kat in MENU_VERISI:
@@ -168,10 +174,8 @@ def siparis_ver(data: SiparisOlustur):
     siparis_id_sayaci += 1
     return {"mesaj": "İletildi", "siparis_id": yeni_siparis["id"]}
 
-# --- BU YENİ: GARSON ÇAĞRISINI LİSTEYE EKLER ---
 @app.post("/api/garson-cagir")
 async def garson_cagir(veri: dict):
-    # Mutfağın görmesi için listeye ekliyoruz
     garson_cagrilari.append({
         "masa_no": veri.get("masa_no"),
         "zaman": datetime.datetime.now().strftime("%H:%M")
@@ -182,7 +186,6 @@ async def garson_cagir(veri: dict):
 def mutfak_ekrani():
     return {"siparisler": [s for s in aktif_siparisler if s["durum"] == "Hazırlanıyor"], "garson_cagrilari": garson_cagrilari}
 
-# --- BU YENİ: GARSON ÇAĞRISINI EKRANDAN SİLER ---
 @app.post("/api/mutfak/garson-tamamla")
 async def garson_tamamla(veri: dict):
     global garson_cagrilari
@@ -208,5 +211,4 @@ def patron_raporu():
         "gecmis": aktif_siparisler[::-1] 
     }
 
-# En sona ekledik ki HTML'lerin de internete açılsın
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

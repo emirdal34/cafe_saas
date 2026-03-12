@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <meta charset="UTF-8">
+    <title>Emir Büfe - Patron Paneli</title>
+
     <script>
         if(localStorage.getItem("procount_auth") !== "patron") {
             window.location.href = "index.html";
         }
     </script>
-    <meta charset="UTF-8">
-    ...
-    <meta charset="UTF-8">
-    <title>Emir Büfe - Patron Paneli</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-8 font-sans">
@@ -88,7 +88,6 @@
             }
         }
 
-        // ARTIK İSTİSNASIZ HER ÜRÜNDE SİL BUTONU VAR
         function inputOlustur(katId, urunId, secenekId, urunAdi, fiyat) {
             const secParam = secenekId ? `'${secenekId}'` : 'null';
             const inputId = `fiyat_${katId}_${urunId}_${secenekId || 'tek'}`;
@@ -112,7 +111,6 @@
             `;
         }
 
-        // FİYAT GÜNCELLEME (HATA YAKALAMA EKLENDİ)
         async function fiyatGuncelle(katId, urunId, secenekId, inputId) {
             const yeniFiyatText = document.getElementById(inputId).value;
             if(yeniFiyatText.trim() === "") return alert("Fiyat boş olamaz!");
@@ -121,7 +119,6 @@
                 const response = await fetch(`${API_URL}/api/admin/fiyat-guncelle`, {
                     method: "POST", 
                     headers: { "Content-Type": "application/json" },
-                    // Sayıya çevirmeyi garantiye alıyoruz
                     body: JSON.stringify({ 
                         kategori_id: katId, 
                         urun_id: parseInt(urunId), 
@@ -139,7 +136,6 @@
             } catch(e) { alert("Sunucuya bağlanılamadı. Python motorunu kontrol et!"); }
         }
 
-        // YENİ ÜRÜN EKLEME (HATA YAKALAMA EKLENDİ)
         async function yeniUrunEkle() {
             const katId = document.getElementById("yeni-kategori").value;
             const ad = document.getElementById("yeni-ad").value;
@@ -164,7 +160,7 @@
                     document.getElementById("yeni-ad").value = "";
                     document.getElementById("yeni-fiyat").value = "";
                     alert("✅ Ürün başarıyla eklendi patron!");
-                    menuyuGetir(); // Ekranı tazele
+                    menuyuGetir(); 
                 } else {
                     const hata = await response.text();
                     alert("HATA ÇIKTI: " + hata);
@@ -172,7 +168,6 @@
             } catch(e) { alert("Sunucuya bağlanılamadı. Python motorunu kontrol et!"); }
         }
 
-        // ÜRÜN SİLME
         async function urunSil(katId, urunId) {
             if(!confirm("⚠️ Patron bu ürünü menüden tamamen siliyorum, emin misin?")) return;
             
